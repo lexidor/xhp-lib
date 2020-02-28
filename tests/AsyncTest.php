@@ -12,37 +12,34 @@ use namespace HH\Lib\Math;
 use function Facebook\FBExpect\expect;
 use type Facebook\HackTest\DataProvider;
 
-class :async:test extends :x:element {
-  use XHPAsync;
+xhp class async:test extends :x:element {
 
-  protected async function asyncRender(): Awaitable<XHPRoot> {
+  protected async function renderAsync(): Awaitable<XHPRoot> {
     return <div>{$this->getChildren()}</div>;
   }
 }
 
-class :test:xfrag-wrap extends :x:element {
+xhp class test:xfrag_wrap extends :x:element {
 
-  protected function render(): XHPRoot {
+  protected async function renderAsync(): Awaitable<XHPRoot> {
     return <x:frag>{$this->getChildren()}</x:frag>;
   }
 }
 
-class :test:async-xfrag-wrap extends :x:element {
-  use XHPAsync;
+xhp class test:async_xfrag_wrap extends :x:element {
 
-  protected async function asyncRender(): Awaitable<XHPRoot> {
+  protected async function renderAsync(): Awaitable<XHPRoot> {
     return <x:frag>{$this->getChildren()}</x:frag>;
   }
 }
 
-class :async:par-test extends :x:element {
-  use XHPAsync;
+xhp class async:par_test extends :x:element {
 
   attribute string label @required;
 
   public static Vector<(string, string)> $log = Vector {};
 
-  protected async function asyncRender(): Awaitable<XHPRoot> {
+  protected async function renderAsync(): Awaitable<XHPRoot> {
     $label = $this->:label;
     self::$log[] = tuple($label, 'start');
     await RescheduleWaitHandle::create(RescheduleWaitHandle::QUEUE_DEFAULT, 0);
@@ -85,25 +82,20 @@ class AsyncTest extends Facebook\HackTest\HackTest {
     expect($xhp->toString())->toEqual('<div><b>BE BOLD</b></div>');
   }
 
-  public function testInstanceOfInterface(): void {
-    $xhp = <async:test><b>BE BOLD</b></async:test>;
-    expect($xhp)->toBeInstanceOf(XHPAwaitable::class);
-  }
-
   public function parallelizationContainersProvider(): varray<varray<:xhp>> {
     return varray[
-      varray[<test:xfrag-wrap />],
-      varray[<test:async-xfrag-wrap />],
+      varray[<test:xfrag_wrap />],
+      varray[<test:async_xfrag_wrap />],
     ];
   }
 
   <<DataProvider('parallelizationContainersProvider')>>
   public function testParallelization(:x:element $container): void {
-    :async:par-test::$log = Vector {};
+    :async:par_test::$log = Vector {};
 
-    $a = <async:par-test label="a" />;
-    $b = <async:par-test label="b" />;
-    $c = <async:par-test label="c" />;
+    $a = <async:par_test label="a" />;
+    $b = <async:par_test label="b" />;
+    $c = <async:par_test label="c" />;
 
     $container->replaceChildren(varray[$b, $c]);
 
@@ -112,7 +104,7 @@ class AsyncTest extends Facebook\HackTest\HackTest {
       '<div><div>a</div><div>b</div><div>c</div></div>',
     );
 
-    $log = :async:par-test::$log;
+    $log = :async:par_test::$log;
     $by_node = dict['a' => dict[], 'b' => dict[], 'c' => dict[]];
 
     foreach ($log as $idx => $data) {

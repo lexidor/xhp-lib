@@ -12,7 +12,8 @@ use type Facebook\TypeAssert\IncorrectTypeException;
 use namespace Facebook\TypeAssert;
 use namespace HH\Lib\{C, Dict, Keyset, Str};
 
-abstract class :x:composable-element extends :xhp {
+abstract xhp class x:composable_element extends :xhp {
+  protected bool $__isRendered = false;
   private dict<string, mixed> $attributes = dict[];
   // Cannot be changed just yet because prependChild would become a lot slower
   private Vector<XHPChild> $children = Vector {};
@@ -47,7 +48,7 @@ abstract class :x:composable-element extends :xhp {
     foreach ($attributes as $key => $value) {
       if (self::isSpreadKey($key)) {
         invariant(
-          $value is :x:composable-element,
+          $value is :x:composable_element,
           "Only XHP can be used with an attribute spread operator",
         );
         $this->spreadElementImpl($value);
@@ -79,6 +80,7 @@ abstract class :x:composable-element extends :xhp {
    * @param $child     single child or array of children
    */
   final public function appendChild(mixed $child): this {
+    invariant(!$this->__isRendered, "Can't appendChild after render");
     if ($child is Traversable<_>) {
       foreach ($child as $c) {
         $this->appendChild($c);
@@ -118,6 +120,7 @@ abstract class :x:composable-element extends :xhp {
    * @param $children  Single child or array of children
    */
   final public function replaceChildren(XHPChild ...$children): this {
+    invariant(!$this->__isRendered, "Can't appendChild after render");
     // This function has been micro-optimized
     $new_children = vec[];
     foreach ($children as $xhp) {
@@ -337,7 +340,7 @@ abstract class :x:composable-element extends :xhp {
    * Defaults from $xhp are copied as well, if they are present.
    */
   protected final function spreadElementImpl(
-    :x:composable-element $element,
+    :x:composable_element $element,
   ): void {
     foreach ($element::__xhpReflectionAttributes() as $attr_name => $attr) {
       $our_attr = static::__xhpReflectionAttribute($attr_name);
@@ -371,6 +374,7 @@ abstract class :x:composable-element extends :xhp {
         $value = $this->validateEnumValuesAndCoerceScalars($attr, $value);
       }
     }
+    invariant(!$this->__isRendered, "Can't setAttribute after render");
     $this->attributes[$attr] = $value;
     return $this;
   }
@@ -407,6 +411,7 @@ abstract class :x:composable-element extends :xhp {
    * @param $val       value
    */
   final public function removeAttribute(string $attr): this {
+    invariant(!$this->__isRendered, "Can't removeAttribute after render");
     unset($this->attributes[$attr]);
     return $this;
   }
@@ -419,6 +424,7 @@ abstract class :x:composable-element extends :xhp {
    * @param $val       value
    */
   final public function forceAttribute(string $attr, mixed $value): this {
+    invariant(!$this->__isRendered, "Can't forceAttribute after render");
     $this->attributes[$attr] = $value;
     return $this;
   }
@@ -458,6 +464,7 @@ abstract class :x:composable-element extends :xhp {
    * @return :xhp           $this
    */
   final public function setContext(string $key, mixed $value): this {
+    invariant(!$this->__isRendered, "Can't setContext after render");
     $this->context[$key] = $value;
     return $this;
   }
@@ -475,6 +482,7 @@ abstract class :x:composable-element extends :xhp {
   final public function addContextMap(
     KeyedContainer<string, mixed> $context,
   ): this {
+    invariant(!$this->__isRendered, "Can't setContext after render");
     $this->context = Dict\merge($this->context, $context);
     return $this;
   }

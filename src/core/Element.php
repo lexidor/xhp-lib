@@ -15,8 +15,8 @@
  * This is important because most elements should not be dealing with strings
  * of markup.
  */
-abstract class :x:element extends :x:composable-element implements XHPRoot {
-  abstract protected function render(): XHPRoot;
+abstract xhp class x:element extends :x:composable_element implements XHPRoot {
+  abstract protected function renderAsync(): Awaitable<XHPRoot>;
 
   final public function toString(): string {
     return \HH\Asio\join($this->asyncToString());
@@ -34,17 +34,13 @@ abstract class :x:element extends :x:composable-element implements XHPRoot {
   }
 
   protected async function __renderAndProcess(): Awaitable<XHPRoot> {
+    invariant(!$this->__isRendered, "Attempted to render XHP element twice");
+    $this->__isRendered = true;
     if (:xhp::isChildValidationEnabled()) {
       $this->validateChildren();
     }
 
-    if ($this is XHPAwaitable) {
-      $composed = /* HH_FIXME[4112] protected */
-      /* HH_FIXME[4053] Refinement with protected methods (bug) */
-      await $this->asyncRender();
-    } else {
-      $composed = $this->render();
-    }
+    $composed = await $this->renderAsync();
 
     $composed->__transferContext($this->getAllContexts());
     if ($this is XHPHasTransferAttributes) {

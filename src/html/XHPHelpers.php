@@ -23,7 +23,7 @@ interface HasXHPHelpers
  * attribute :xhp:html-element;
  */
 trait XHPHelpers implements HasXHPHelpers {
-  require extends :x:composable-element;
+  require extends :x:composable_element;
 
   use XHPBaseHTMLHelpers;
 
@@ -31,7 +31,7 @@ trait XHPHelpers implements HasXHPHelpers {
    * Copies all attributes that are set on $this and valid on $target to
    * $target.
    */
-  final public function copyAllAttributes(:x:composable-element $target): void {
+  final public function copyAllAttributes(:x:composable_element $target): void {
     $this->transferAttributesImpl($target, ImmSet {});
   }
 
@@ -40,7 +40,7 @@ trait XHPHelpers implements HasXHPHelpers {
    * $target to $target.
    */
   final public function copyCustomAttributes(
-    :x:composable-element $target,
+    :x:composable_element $target,
   ): void {
     $this->transferAttributesImpl($target);
   }
@@ -50,42 +50,42 @@ trait XHPHelpers implements HasXHPHelpers {
    * valid on $target to $target.
    */
   final public function copyAttributesExcept(
-    :x:composable-element $target,
+    :x:composable_element $target,
     _Private\SetLike<string> $ignore,
   ): void {
     $this->transferAttributesImpl($target, $ignore);
   }
 
-  /*
+  /**
    * Transfers all attributes that are set on $this and valid on $target to
-   * $target. This will unset all transfered attributes from $this.
+   * $target.
    */
   final public function transferAllAttributes(
-    :x:composable-element $target,
+    :x:composable_element $target,
   ): void {
-    $this->transferAttributesImpl($target, ImmSet {}, true);
+    $this->transferAttributesImpl($target, ImmSet {});
   }
 
-  /*
+  /**
    * Transfers only the non-HTML attributes that are set on $this and valid on
-   * $target to $target. This will unset all transfered attributes from $this.
+   * $target to $target.
    */
   final public function transferCustomAttributes(
-    :x:composable-element $target,
+    :x:composable_element $target,
   ): void {
-    $this->transferAttributesImpl($target, null, true);
+    $this->transferAttributesImpl($target, null);
   }
 
-  /*
+  /**
    * Transfers all attributes except those specified that are set on $this and
-   * valid on $target to $target. This will unset all transfered attributes from
+   * valid on $target to $target.
    * $this.
    */
   final public function transferAttributesExcept(
-    :x:composable-element $target,
+    :x:composable_element $target,
     _Private\SetLike<string> $ignore,
   ): void {
-    $this->transferAttributesImpl($target, $ignore, true);
+    $this->transferAttributesImpl($target, $ignore);
   }
 
   /*
@@ -93,12 +93,12 @@ trait XHPHelpers implements HasXHPHelpers {
    * directly. Instead, use one of the transfer/copy flavors above.
    */
   final private function transferAttributesImpl(
-    :x:composable-element $target,
+    :x:composable_element $target,
     ?_Private\SetLike<string> $ignore = null,
     bool $remove = false,
   ): void {
     if ($ignore === null) {
-      $ignore = :xhp:html-element::__xhpAttributeDeclaration();
+      $ignore = :xhp:html_element::__xhpAttributeDeclaration();
     } else {
       $ignore = array_fill_keys(keyset($ignore), true);
     }
@@ -106,6 +106,9 @@ trait XHPHelpers implements HasXHPHelpers {
     $compatible = $target::__xhpAttributeDeclaration();
     $transferAttributes = array_diff_key($this->getAttributes(), $ignore);
     foreach ($transferAttributes as $attribute => $value) {
+      if ($target->isAttributeSet($attribute)) {
+        continue;
+      }
       if (
         C\contains_key($compatible, $attribute) ||
         ReflectionXHPAttribute::IsSpecial($attribute)
@@ -133,9 +136,6 @@ trait XHPHelpers implements HasXHPHelpers {
             'elements to fix this.',
           );
         }
-        if ($remove) {
-          $this->removeAttribute($attribute);
-        }
       }
     }
   }
@@ -146,7 +146,7 @@ trait XHPHelpers implements HasXHPHelpers {
   }
 
   final public function transferAttributesToRenderedRoot(
-    :x:composable-element $root,
+    :x:composable_element $root,
   ): void {
     if (:xhp::isAttributeValidationEnabled() && $root is :x:element) {
       if (!($root is HasXHPHelpers)) {
@@ -183,18 +183,17 @@ trait XHPHelpers implements HasXHPHelpers {
     // We want to append classes to the root node, instead of replace them,
     // so do this attribute manually and then remove it.
     foreach ($this->getAttributeNamesThatAppendValuesOnTransfer() as $attr) {
-      if (array_key_exists($attr, $attributes)) {
-        $rootAttributes = $root->getAttributes();
-        if (array_key_exists($attr, $rootAttributes)) {
-          $rootValue = (string)$rootAttributes[$attr];
-          if ($rootValue !== '') {
-            $thisValue = (string)$attributes[$attr];
-            if ($thisValue !== '') {
-              $root->setAttribute($attr, $rootValue.' '.$thisValue);
-            }
-            $this->removeAttribute($attr);
-          }
-        }
+      if (
+        !(array_key_exists($attr, $attributes) && $root->isAttributeSet($attr))
+      ) {
+        continue;
+      }
+      $root_value = $root->getAttribute($attr) as string;
+      $this_value = $this->getAttribute($attr) as string;
+      if ($root_value === '') {
+        $root->setAttribute($attr, $this_value);
+      } else if ($this_value !== '') {
+        $root->setAttribute($attr, $root_value.' '.$this_value);
       }
     }
 
