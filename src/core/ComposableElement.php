@@ -15,7 +15,6 @@ use namespace HH\Lib\{C, Dict, Keyset, Str, Vec};
 abstract xhp class x:composable_element extends :xhp {
   protected bool $__isRendered = false;
   private dict<string, mixed> $attributes = dict[];
-  // Cannot be changed just yet because prependChild would become a lot slower
   private vec<XHPChild> $children = vec[];
   private dict<string, mixed> $context = dict[];
 
@@ -93,20 +92,6 @@ abstract xhp class x:composable_element extends :xhp {
       assert($child is XHPChild);
       $this->children[] = $child;
     }
-    return $this;
-  }
-
-  /**
-   * Adds a child to the beginning of this node. If you give an array to this
-   * method then it will behave like a DocumentFragment.
-   *
-   * @param $child     single child or array of children
-   */
-  final public function prependChild(mixed $child): this {
-    $old = $this->children;
-    $this->children = vec[];
-    $this->appendChild($child);
-    $this->children = Vec\concat($this->children, $old);
     return $this;
   }
 

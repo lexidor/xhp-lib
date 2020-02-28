@@ -20,7 +20,6 @@ abstract xhp class xhp implements XHPChild, JsonSerializable {
   ): void {
   }
   abstract public function appendChild(mixed $child): this;
-  abstract public function prependChild(mixed $child): this;
   abstract public function replaceChildren(...): this;
   abstract public function getChildren(
     ?string $selector = null,
