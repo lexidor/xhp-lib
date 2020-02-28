@@ -10,13 +10,13 @@
 
 use type Facebook\TypeAssert\IncorrectTypeException;
 use namespace Facebook\TypeAssert;
-use namespace HH\Lib\{C, Dict, Keyset, Str};
+use namespace HH\Lib\{C, Dict, Keyset, Str, Vec};
 
 abstract xhp class x:composable_element extends :xhp {
   protected bool $__isRendered = false;
   private dict<string, mixed> $attributes = dict[];
   // Cannot be changed just yet because prependChild would become a lot slower
-  private Vector<XHPChild> $children = Vector {};
+  private vec<XHPChild> $children = vec[];
   private dict<string, mixed> $context = dict[];
 
   protected function init(): void {
@@ -103,13 +103,10 @@ abstract xhp class x:composable_element extends :xhp {
    * @param $child     single child or array of children
    */
   final public function prependChild(mixed $child): this {
-    // There's no prepend to a Vector, so reverse, append, and reverse agains
-    // @reviewer, this would become significantly slower with Hack arrays.
-    // We'd ideally not allocate the memory for the intermediary vec's.
-    // Maybe \array_unshift() (of a safe HSL variant) might be a better option here.
-    $this->children->reverse();
+    $old = $this->children;
+    $this->children = vec[];
     $this->appendChild($child);
-    $this->children->reverse();
+    $this->children = Vec\concat($this->children, $old);
     return $this;
   }
 
@@ -142,7 +139,7 @@ abstract xhp class x:composable_element extends :xhp {
         }
       }
     }
-    $this->children = new Vector($new_children);
+    $this->children = $new_children;
     return $this;
   }
 
